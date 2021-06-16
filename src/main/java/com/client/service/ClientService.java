@@ -7,7 +7,6 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
@@ -19,7 +18,7 @@ import com.client.model.Client;
 public class ClientService {
 	HashMap<Long,Client> map = new HashMap<>();
 	public String saveClientInfo(Client client) {
-		
+	if(validateId(client)) {
 	if(validateMobileNumber(client.getMobileNumber())) {
 		if(!map.containsKey(client.getId())) {
 			return save(client);
@@ -27,11 +26,14 @@ public class ClientService {
 			return "Record is already exist";
 		}
 		
-	}else {
+	  }else {
 		return "Mobile Number is invalid";
 	}
-		
+	
+	}else {
+		return "Please enter valid id";
 	}
+ }
 
 
 	private String save(Client client) {
@@ -66,17 +68,39 @@ public class ClientService {
 	}
 
 	public String updateClientInfo(Client client) {
-		if(map.containsKey(client.getId())) {
+		if(validateId(client)) {
 			if(validateMobileNumber(client.getMobileNumber())) {
+				return update(client);
+			  }else {
+				return "Mobile Number is invalid";
+			}
+			
+			}else {
+				return "Please enter valid id";
+			}
+	}
+	
+
+	private String update(Client client) {
+		if(map.containsKey(client.getId())) {
+			if(isMobileNumberExist(client)) {
 				map.put(client.getId(), client);
 				return "Record updated successfully";
 			}else {
-				return "Mobile Number is invalid";
+				return "MobileNumber is already in use";
 			}
 		}else {
 			 throw new RecordNotFoundException("Record not foud");
 		}
 	}
+
+
+	private boolean isMobileNumberExist(Client client) {
+		List<Entry<Long, Client>> st = map.entrySet().stream().filter(v->v.getValue().getMobileNumber().equals(client.getMobileNumber()) && v.getValue().getId()!=client.getId())
+				.collect(Collectors.toList());
+		return st.size()==1?false:true;
+	}
+
 
 	public String deleteById(long id) {
 		if(map.containsKey(id)) {
@@ -101,6 +125,16 @@ public class ClientService {
 			return st.stream().filter(c->c.getMobileNumber().equals(mobileNumber)).findAny().orElseThrow(()-> new RecordNotFoundException("Record not foud"));
 		}
 		return null;
+	}
+	
+	private boolean validateId(Client client) {
+		String regex = "\\d{13}";
+		boolean result = String.valueOf(client.getId()).matches(regex);
+		if(result) {
+	         return true;
+	      } else {
+	         return false;
+	      }
 	}
 	
 }
